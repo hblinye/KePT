@@ -1,0 +1,72 @@
+// Place all the styles related to the Meeting controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+
+#kept-logo {
+    width: calc(100% + 30px);
+    background: linear-gradient(#aaa, black);
+    color: white;
+    margin: 0 -15px;
+    padding: 10px 15px;
+    font-size: 30px;
+    font-family: sans-serif;
+}
+
+.user-block {
+    margin-top: 20px;
+    border-bottom: 1px solid #ccc;
+}
+
+#user-secret-key {
+    margin: 0 15px;
+}
+
+.be-hide {
+    display: none;
+}
+
+.be-inline {
+    display: inline;
+}
+
+.meetings-block {
+    padding-top: 40px;
+
+    span {
+        font-size: 20px;
+        margin-right: 25px;
+    }
+
+    form {
+        min-width: 30vw;
+        margin-left: 30px;
+        margin-right: 30px;
+    }
+
+    .items-y-center {
+        align-items:center;
+        display:-webkit-flex;
+    }
+
+    #meetings-list {
+        min-height: 20px;
+        padding-top: 15px;
+
+        .meeting-detail {
+            border-bottom: 1px solid #ccc;
+            
+            .meeting-detail-column {
+                height: 50px;
+                border-left: 1px solid #ddd;
+            }
+        }
+        
+        .meeting-detail:first-child {
+            border-top: 1px solid #ccc
+        }
+
+        .meeting-detail:hover {
+            background: #eee
+        }
+    }
+}

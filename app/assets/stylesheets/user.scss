@@ -1,0 +1,22 @@
+// Place all the styles related to the User controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+
+@import "bootstrap-sprockets";
+@import "bootstrap";
+
+.content-center {
+    justify-content:center;
+    align-items:center;
+    display:-webkit-flex;
+}
+
+.full-screen-height {
+    height: 100vh
+}
+
+#user-login-form {
+    width: 50%;
+    padding: 15px;
+    border: 1px solid #ccc
+}

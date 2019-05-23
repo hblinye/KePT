@@ -1,0 +1,102 @@
+<%= render 'layouts/logo' %>
+<div class="user-block">
+  <h2>USER: <strong><%=@user.name %></strong>
+    <div id="user-key-block" class="be-hide">
+        <span id="user-secret-key"><small><%= @user.skey %></small></span>
+        <button class="btn btn-success" onclick="copyToClipboard('<%= @user.skey %>')">Copy</button>
+    </div>
+    <button id="toggle-user-key-block" class="btn btn-primary">
+        <span class="toggle-button-text be-hide">hide</span>
+        <span class="toggle-button-text">show</span>
+    </button>
+  </h2>
+</div>
+<div class="meetings-block">
+    <div class="row">
+        <div class="col-sm-12 items-y-center">
+            <span><strong>Meetings List</strong></span>
+            <div class="be-inline">
+                <button id="meeting-join-button" class="btn btn-primary">Join Meeting</button>
+                <button id="meeting-create-button" class="btn btn-primary">Create Meeting</button>
+            </div>
+            <div class="be-inline">
+                <%= form_tag(create_meeting_path, method: "post", class: "be-hide", id: "meeting-create-form") do %>
+                    <div class="input-group">
+                        <%=text_field_tag :value, '', class: "form-control", placeholder: "meeting name..."%>
+                    <span class="input-group-btn">
+                        <%=submit_tag "Create", class: "btn btn-primary" %>
+                    </span>
+                    </div>
+                <% end %>
+                <%= form_tag(join_meeting_path, method: "post", class: "be-hide", id: "meeting-join-form") do |f| %>
+                    <div class="input-group">
+                        <%=text_field_tag :value, '' ,class: "form-control", placeholder: "meeting key..."%>
+                    <span class="input-group-btn">
+                        <%=submit_tag "Join", class: "btn btn-primary" %>
+                    </span>
+                    </div>
+                <% end %>
+            </div>
+        </div>
+    </div>
+    <div id="meetings-list">
+    <div class="row meeting-detail">
+        <div class="col-md-1 content-center meeting-detail-column">
+            <strong>No.</strong>
+        </div>
+        <div class="col-md-3 content-center meeting-detail-column">
+            <strong>Meeting Name</strong>
+        </div>
+        <div class="col-md-4 content-center meeting-detail-column">
+            <strong>Meeting Secret Key</strong>
+        </div>
+        <div class="col-md-3 content-center meeting-detail-column">
+            <strong>Created Time</strong>
+        </div>
+        <div class="col-md-1 content-center meeting-detail-column">
+            
+        </div>
+    </div>
+    <% @user.meetings.each_with_index do |meeting, index| %>
+        <div class="row meeting-detail">
+            <div class="col-md-1 content-center meeting-detail-column">
+                <%= index + 1 %>
+            </div>
+            <div class="col-md-3 content-center meeting-detail-column">
+                <%= meeting.name %>
+            </div>
+            <div class="col-md-4 content-center meeting-detail-column">
+                <button id="show-meeting-skey-button-<%= index.to_s %>" onclick="showMeetingSkey('<%= index %>')" class="btn btn-primary">show</button>
+                <div id="meeting-key-<%= index.to_s %>" class="be-hide">
+                    <%= meeting.skey %>
+                    <button class="btn btn-success" onclick="copyToClipboard('<%= meeting.skey %>')">copy</button>
+                </div>
+            </div>
+            <div class="col-md-3 content-center meeting-detail-column">
+                <%= meeting.created_at %>
+            </div>
+            <div class="col-md-1 content-center meeting-detail-column">
+                <%= link_to "Enter", meeting_path(meeting)%>
+            </div>
+        </div>
+    <% end %>
+</div>
+
+
+<script>
+    function copyToClipboard(value) {
+        var tempElement = document.createElement("input");
+        tempElement.setAttribute("value", value);
+        document.body.append(tempElement);
+        tempElement.select();
+        document.execCommand("copy")
+        document.body.removeChild(tempElement);
+        alert("link copied");
+    }
+
+    function showMeetingSkey(value) {
+        $("#meeting-key-" + value).show()
+        $("#show-meeting-skey-button-" + value).hide()
+    }
+
+</script>

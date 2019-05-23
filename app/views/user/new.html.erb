@@ -1,0 +1,10 @@
+<div class="content-center full-screen-height">
+    <%= form_for @user, :url => {:action => 'create'}, html: { id: "user-login-form" } do |f| %>
+        <div class="input-group">
+            <%=f.text_field :name, class: "form-control", placeholder: "new name or secret key..."%>
+        <span class="input-group-btn">
+            <%=f.submit "Sign In", class: "btn btn-primary" %>
+        </span>
+        </div>
+    <% end %>
+</div>
