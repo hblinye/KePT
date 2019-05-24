@@ -76,14 +76,28 @@
                 <%= meeting.created_at %>
             </div>
             <div class="col-md-1 content-center meeting-detail-column">
-                <%= link_to "Enter", meeting_path(meeting)%>
+                <%= link_to "Enter", enter_meeting_path(meeting)%>
             </div>
         </div>
     <% end %>
-</div>
+</div></div>
 
 
 <script>
+    $(function() {
+        $("#toggle-user-key-block").on('click', function(){
+            $("#user-key-block").toggleClass('be-hide be-inline')
+            $(".toggle-button-text").toggle()
+        })
+        $("#meeting-create-button").on('click', function(){
+            $("#meeting-create-form").show()
+            $("#meeting-join-form").hide()
+        })
+        $("#meeting-join-button").on('click', function(){
+            $("#meeting-join-form").show()
+            $("#meeting-create-form").hide()
+        })
+    })
     function copyToClipboard(value) {
         var tempElement = document.createElement("input");
         tempElement.setAttribute("value", value);
@@ -91,7 +105,7 @@
         tempElement.select();
         document.execCommand("copy")
         document.body.removeChild(tempElement);
-        alert("link copied");
+        alert("key copied");
     }
 
     function showMeetingSkey(value) {

@@ -10,6 +10,16 @@ class MeetingController < ApplicationController
   end
 
   def show
+    if !session[:user_id] || !session[:entering_meeting]
+      redirect_to root_path
+    end
+    if Meeting.exists?(id: params[:id])
+      @meeting = Meeting.find(params[:id])
+      cookies.signed[:active_um] = UserMeetingRelationship.find_by({ user_id: session[:user_id], meeting_id: @meeting.id })
+      session.delete :entering_meeting
+    else
+      redirect_to meeting_index_path
+    end
   end
 
   def create
@@ -26,6 +36,7 @@ class MeetingController < ApplicationController
     um.meeting_id = meeting.id
     um.save
 
+    session[:entering_meeting] = meeting.id
     redirect_to meeting_path(meeting)
   end
 
@@ -41,11 +52,26 @@ class MeetingController < ApplicationController
         UserMeetingRelationship.create!({user_id: session[:user_id], meeting_id: meeting.id})
       end
 
+      session[:entering_meeting] = meeting.id
       redirect_to meeting
     else
       redirect_to meeting_index_path
     end
 
+  end
+
+  def enter
+    if !session[:user_id]
+      redirect_to root_path
+    end
+
+    if Meeting.exists?(id: params[:id]) && UserMeetingRelationship.exists?({user_id: session[:user_id], meeting_id: params[:id]})
+      meeting = Meeting.find(params[:id])
+      session[:entering_meeting] = meeting.id
+      redirect_to meeting
+    else
+      redirect_to meeting_index_path
+    end
   end
 
   private

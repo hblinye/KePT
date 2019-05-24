@@ -1,2 +1,94 @@
-<h1>Meeting#show</h1>
-<p>Find me in app/views/meeting/show.html.erb</p>
+<div class="full-screen-height">
+    <%= render 'layouts/logo' %>
+
+    <div id="board-block" class="row">
+        <!-- <div id="display-board"></div>
+        <% @meeting.user_meeting_relationships.each do |um| %>
+            <%= um.user.name %>
+        <% end %> -->
+
+        <div id="info-board">
+            <div id="meeting-info-block" class="">
+                <span id="meeting-info-name"><%= @meeting.name %></span>
+            </div>
+            <div id="timer-block">
+                <input type="text"/>
+                <button id="timer-starter" class="btn btn-success">Start</button>
+            </div>
+            <div id="users-block">
+                <div class="user-item-block content-center">
+                    <strong>Users List</strong>
+                </div>
+                <% @meeting.user_meeting_relationships.each do |um| %>
+                    <div class="user-item-block content-center"><%= um.user.name %></div>
+                <% end %>
+            </div>
+        </div>
+        <div id="kpt-board">
+            <div id="kp-board">
+                <div id="k-board" class="kpt-board">
+                    <div id="k-title" class="board-title">KEEP</div>
+                </div>
+                <div id="p-board" class="kpt-board">
+                    <div id="p-title" class="board-title">PROBLEAM</div>
+                </div>
+            </div>
+            <div id="t-board" class="kpt-board">
+                <div id="t-title" class="board-title">TRY</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="thought-text-block" class="row">
+        <div class="col-md-1 content-center">
+            <%= link_to "BACK", meeting_index_path, class: "btn btn-danger" %>
+        </div>
+        <div id="types-selector" class="col-md-1">
+            <span>
+            </span>
+            <%= radio_button_tag(:type, "1") %>
+            <%= label_tag(:type_1, "Keep") %>
+            </span>
+            <span>
+            <%= radio_button_tag(:type, "2") %>
+            <%= label_tag(:type_2, "Problem") %>
+            </span>
+            <span>
+            <%= radio_button_tag(:type, "3") %>
+            <%= label_tag(:type_3, "Try") %>
+            </span>
+        </div>
+        <div class="col-md-8 content-center">
+            <%= text_area_tag :thought, '', class: 'form-control' %>
+        </div>
+        <div class="col-md-1 content-center">
+            <button id="thought-submit-button" class="btn btn-success">Submit</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(function() {
+        App.meeting = App.cable.subscriptions.create("MeetingChannel",
+        {
+            connected: function () {
+
+            },
+            disconnected: function () {
+
+            },
+            received: function (data) {
+
+            }
+        })
+        $("#meeting-info-name").on('dblclick', function(){
+            var tempElement = document.createElement("input");
+            tempElement.setAttribute("value", '<%= @meeting.skey %>');
+            document.body.append(tempElement);
+            tempElement.select();
+            document.execCommand("copy")
+            document.body.removeChild(tempElement);
+            alert("key copied");
+        })
+    })
+</script>
