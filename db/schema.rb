@@ -10,18 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2019_05_23_225916) do
+ActiveRecord::Schema.define(version: 2019_05_25_123133) do
 
   create_table "meetings", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "name"
     t.string "skey"
+    t.integer "status", default: 0
   end
 
   create_table "thoughts", force: :cascade do |t|
     t.string "content"
-    t.integer "type"
+    t.integer "ttype"
     t.integer "user_id"
     t.integer "meeting_id"
     t.datetime "created_at", null: false
@@ -35,7 +36,7 @@ ActiveRecord::Schema.define(version: 2019_05_23_225916) do
     t.integer "meeting_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.boolean "active"
+    t.boolean "active", default: true
     t.index ["meeting_id"], name: "index_user_meeting_relationships_on_meeting_id"
     t.index ["user_id"], name: "index_user_meeting_relationships_on_user_id"
   end

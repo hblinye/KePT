@@ -2,39 +2,86 @@
     <%= render 'layouts/logo' %>
 
     <div id="board-block" class="row">
-        <!-- <div id="display-board"></div>
-        <% @meeting.user_meeting_relationships.each do |um| %>
-            <%= um.user.name %>
-        <% end %> -->
 
         <div id="info-board">
             <div id="meeting-info-block" class="">
                 <span id="meeting-info-name"><%= @meeting.name %></span>
+                <span id="meeting-status">
+                    <% status = @meeting.status %>
+                        <% if status == 0 %>
+                            preparing
+                        <% elsif status == 1 %>
+                            submiting
+                        <% elsif status == 2 %>
+                            talking
+                        <% elsif status == 3 %>
+                            selecting
+                        <% elsif status == 4 %>
+                            discussing
+                        <% elsif status == 5 %>
+                            ended
+                        <% end %>
+                </span>
             </div>
             <div id="timer-block">
-                <input type="text"/>
-                <button id="timer-starter" class="btn btn-success">Start</button>
+                <% if @meeting.users.first.id != session[:user_id] %>
+                    <input type="text" id="timer-timebox" disabled />
+                <% else %>
+                    <input type="text" id="timer-timebox"/><button id="timer-starter" class="btn btn-success">Start</button>
+                <% end %>
             </div>
             <div id="users-block">
-                <div class="user-item-block content-center">
+                <div class="user-item-title content-center">
                     <strong>Users List</strong>
                 </div>
+                <div id="users-list-block">
                 <% @meeting.user_meeting_relationships.each do |um| %>
-                    <div class="user-item-block content-center"><%= um.user.name %></div>
+                    <div id="user-<%= um.user_id %>" class="user-item-block <% if um.active %>user-active<% end %>"><%= um.user.name %></div>
                 <% end %>
+                </div>
             </div>
         </div>
         <div id="kpt-board">
             <div id="kp-board">
                 <div id="k-board" class="kpt-board">
                     <div id="k-title" class="board-title">KEEP</div>
+                    <% @meeting.thoughts.select{|x| x.ttype == 1}.each do |thought| %>
+                        <div id="thought-<%= thought.id %>" class="thought-tag">
+                            <div class="thought-user-name"><%= thought.user.name %></div>
+                            <div class="thought-content"><%= thought.content %></div>
+                            <input type="hidden" value="<%= thought.id %>"/>
+                            <% if thought.user_id == session[:user_id] %>
+                                <div class="thought-handler"><button class="btn-danger thought-delete-button">-</button></div>
+                            <% end %>
+                        </div>
+                    <% end %>
                 </div>
                 <div id="p-board" class="kpt-board">
                     <div id="p-title" class="board-title">PROBLEAM</div>
+                    <% @meeting.thoughts.select{|x| x.ttype == 2}.each do |thought| %>
+                        <div id="thought-<%= thought.id %>" class="thought-tag">
+                            <div class="thought-user-name"><%= thought.user.name %></div>
+                            <div class="thought-content"><%= thought.content %></div>
+                            <input type="hidden" value="<%= thought.id %>"/>
+                            <% if thought.user_id == session[:user_id] %>
+                            <div class="thought-handler"><button class="btn-danger thought-delete-button">-</button></div>
+                            <% end %>
+                        </div>
+                    <% end %>
                 </div>
             </div>
             <div id="t-board" class="kpt-board">
                 <div id="t-title" class="board-title">TRY</div>
+                <% @meeting.thoughts.select{|x| x.ttype == 3}.each do |thought| %>
+                    <div id="thought-<%= thought.id %>" class="thought-tag">
+                        <div class="thought-user-name"><%= thought.user.name %></div>
+                        <div class="thought-content"><%= thought.content %></div>
+                        <input type="hidden" value="<%= thought.id %>"/>
+                        <% if thought.user_id == session[:user_id] %>
+                        <div class="thought-handler"><button class="btn-danger thought-delete-button">-</button></div>
+                        <% end %>
+                    </div>
+                <% end %>
             </div>
         </div>
     </div>
@@ -45,7 +92,6 @@
         </div>
         <div id="types-selector" class="col-md-1">
             <span>
-            </span>
             <%= radio_button_tag(:type, "1") %>
             <%= label_tag(:type_1, "Keep") %>
             </span>
@@ -69,6 +115,8 @@
 
 <script>
     $(function() {
+        let timer = null;
+        let time = 0;
         App.meeting = App.cable.subscriptions.create("MeetingChannel",
         {
             connected: function () {
@@ -77,8 +125,42 @@
             disconnected: function () {
 
             },
-            received: function (data) {
-
+            received: function (responseData) {
+                console.log(responseData);
+                const type = responseData.type;
+                const data = responseData.data;
+                switch (type) {
+                    case 'submit':
+                        receivedSubmitRespose(data);
+                        break;
+                    case 'enter':
+                        enterResponse(data);
+                        break;
+                    case 'leave':
+                        leaveResponse(data);
+                        break;
+                    case 'timingStart':
+                        timingStartResponse(data);
+                        break;
+                    case 'timeup':
+                        timeupResponse();
+                        break;
+                    case 'delete':
+                        deleteResponse(data);
+                        break;
+                }
+            },
+            submit: function (thought, type) {
+                this.perform('submit', {thought: thought, type: type});
+            },
+            timingStart: function (second) {
+                this.perform('timing_start', {second: second});
+            },
+            deleteThought: function(id) {
+                this.perform('delete_thought', {id: id});
+            },
+            pushTime: function(second) {
+                this.perform('pushTime', {second: second});
             }
         })
         $("#meeting-info-name").on('dblclick', function(){
@@ -90,5 +172,143 @@
             document.body.removeChild(tempElement);
             alert("key copied");
         })
+        $("#thought-submit-button").on('click', function(){
+            const thought = $("#thought").val();
+            const type = $("input[name='type']:checked").val();
+            App.meeting.submit(thought, type)
+        })
+        $("#timer-starter").on('click', function (){
+            let pushTime = $("#timer-timebox").val();
+            App.meeting.timingStart(pushTime);
+        })
+
+        $(".thought-delete-button").on('click', function(){
+            deleteThought($(this).parent().children("input[type='hidden']").val())
+        })
+
+
+        function receivedSubmitRespose (data) {
+            const type = data.thought.ttype;
+            let targetElement = null;
+            switch (type) {
+                case 1:
+                    targetElement = $("#k-board");
+                    break;
+                case 2:
+                    targetElement = $("#p-board");
+                    break;
+                case 3:
+                    targetElement = $("#t-board");
+                    break;
+            }
+            if (targetElement) {
+                const thoughtElement = document.createElement('div');
+                $(thoughtElement).attr('id', 'thought-' + data.thought.id);
+                thoughtElement.className = "thought-tag";
+                const userNameDiv = document.createElement('div');
+                userNameDiv.className = "thought-user-name";
+                $(userNameDiv).text(data.user.name);
+                const thoughtContentDiv = document.createElement('div');
+                thoughtContentDiv.className = "thought-content";
+                $(thoughtContentDiv).text(data.thought.content);
+                thoughtIdField = document.createElement('input');
+                thoughtIdField.type = 'hidden';
+                $(thoughtIdField).val(data.thought.id);
+                const thoughtHandlerDiv = document.createElement('div');
+                thoughtHandlerDiv.className = "thought-handler";
+                if (data.thought.user_id === <%= session[:user_id] %>) {
+                    const thoughtDeleteButton = document.createElement('button');
+                    thoughtDeleteButton.className = "btn-danger";
+                    $(thoughtDeleteButton).text('-');
+                    $(thoughtDeleteButton).on('click', function(){
+                        deleteThought(data.thought.id);
+                    })
+                    $(thoughtHandlerDiv).append(thoughtDeleteButton);
+                }
+                $(thoughtElement).append(userNameDiv);
+                $(thoughtElement).append(thoughtContentDiv);
+                $(thoughtElement).append(thoughtIdField);
+                $(thoughtElement).append(thoughtHandlerDiv);
+                $(targetElement).append(thoughtElement);
+            }
+            
+        }
+    
+        function enterResponse(data) {
+            const targetElement = $("#user-" + data.id)
+            if (targetElement.length > 0) {
+                $(targetElement).toggleClass('user-active', true);
+            } else {
+                const userItemBlock = document.createElement('div');
+                $(userItemBlock).attr('id', "user-" + data.id);
+                userItemBlock.className = "user-item-block user-active"
+                $(userItemBlock).text(data.name);
+                $("#users-list-block").append(userItemBlock)
+            }
+
+            <% if @meeting.users.first.id == session[:user_id] %>
+                if (data.id !== <%= session[:user_id] %>) {
+                    App.meeting.pushTime($("#timer-timebox").val());
+                }
+            <% end %>
+        }
+    
+        function leaveResponse(data) {
+            if ($("#user-" + data).length > 0) {
+                $("#user-" + data).toggleClass('user-active');
+            }
+        }
+    
+        function timingStartResponse (data) {
+            time = parseInt(data.second);
+            $("#timer-timebox").val(time);
+            let statusText = null;
+            switch(data.status) {
+                case 1:
+                    statusText = 'submiting';
+                    break;
+                case 2:
+                    statusText = 'talking';
+                    break;
+                case 3:
+                    statusText = 'selecting';
+                    break;
+                case 4:
+                    statusText = 'discussing';
+                    break;
+                case 5:
+                    statusText = 'ended';
+                    break;
+            }
+            $("#meeting-status").text(statusText);
+            clearTimeout(timer);
+            timer = setTimeout(function() { countdown(); }, 1000)
+        }
+    
+        function countdown() {
+            time -- ;
+            $("#timer-timebox").val(time);
+            clearTimeout(timer);
+            if (time > 0) {
+                timer = setTimeout(function() { countdown(); }, 1000);
+            } else {
+                $("#thought").attr('readonly', true);
+            }
+        }
+    
+        function timeupResponse () {
+            $("#thought").attr('readonly', true);
+        }
+    
+        function deleteThought (id) {
+            App.meeting.deleteThought(id);
+        }
+        function deleteResponse (id) {
+            console.log(id);
+            if ($("#thought-" + id).length > 0) {
+                $("#thought-" + id).remove();
+            }
+        }
     })
+
 </script>
