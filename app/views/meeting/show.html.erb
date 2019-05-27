@@ -1,6 +1,30 @@
 <div class="full-screen-height">
     <%= render 'layouts/logo' %>
-
+    <% if @meeting.status == 7 %>
+        <div id="discussing-board">
+        <% else %>
+        <div id="discussing-board" style="display:none">
+        <% discussing_thought = @meeting.thoughts.select{|x| x.discussing == 1 }.first %>
+        <div id="discussing-controller">
+            <% if @meeting.users.first.id == session[:user_id] %>
+                <button id="end-discuss-button">end</button>
+                <% if discussing_thought.ttype == 2 %>
+                    <button id="discuss-try-button">To Try</button>
+                <% end %>
+                <div class="input-group">
+                    <%=text_field_tag :discuss_time, '', class: "form-control", placeholder: "time for discussing..."%>
+                    <span class="input-group-btn">
+                        <%=submit_tag "Push", class: "btn btn-primary" %>
+                    </span>
+                </div>
+            <% end %>
+        </div>
+        <div id="discussing-thought-container">
+        </div>
+        <div id="discussing-operations">
+        </div>
+    <% end %>
+    </div>
     <div id="board-block" class="row">
 
         <div id="info-board">
@@ -9,27 +33,35 @@
                 <span id="meeting-status">
                     <% status = @meeting.status %>
                         <% if status == 0 %>
-                            preparing
+                            waiting submiting
                         <% elsif status == 1 %>
                             submiting
                         <% elsif status == 2 %>
-                            talking
+                            waiting talking 
                         <% elsif status == 3 %>
-                            selecting
+                            talking
                         <% elsif status == 4 %>
-                            discussing
+                            waiting selecting
                         <% elsif status == 5 %>
+                            selecting
+                        <% elsif status == 6 %>
+                            waiting discussing
+                        <% elsif status == 7 %>
+                            discussing
+                        <% elsif status == 8 %>
                             ended
                         <% end %>
                 </span>
             </div>
-            <div id="timer-block">
-                <% if @meeting.users.first.id != session[:user_id] %>
-                    <input type="text" id="timer-timebox" disabled />
-                <% else %>
-                    <input type="text" id="timer-timebox"/><button id="timer-starter" class="btn btn-success">Start</button>
-                <% end %>
-            </div>
+            <% if status < 99 %>
+                <div id="timer-block">
+                    <% if @meeting.users.first.id != session[:user_id] %>
+                        <input type="text" id="timer-timebox" disabled />
+                    <% else %>
+                        <input type="text" id="timer-timebox"/><button id="timer-starter" class="btn btn-primary">Start</button>
+                    <% end %>
+                </div>
+            <% end %>
             <div id="users-block">
                 <div class="user-item-title content-center">
                     <strong>Users List</strong>
@@ -51,7 +83,11 @@
                             <div class="thought-content"><%= thought.content %></div>
                             <input type="hidden" value="<%= thought.id %>"/>
                             <% if thought.user_id == session[:user_id] %>
-                                <div class="thought-handler"><button class="btn-danger thought-delete-button">-</button></div>
+                                <div class="thought-handler">
+                                <% if @meeting.status == 1 %>
+                                    <button class="btn-danger thought-delete-button">-</button>
+                                <% end %>
+                                </div>
                             <% end %>
                         </div>
                     <% end %>
@@ -63,8 +99,21 @@
                             <div class="thought-user-name"><%= thought.user.name %></div>
                             <div class="thought-content"><%= thought.content %></div>
                             <input type="hidden" value="<%= thought.id %>"/>
+                            <div class="thought-pick">
+                                <% if @meeting.status >= 3 %>
+                                    <% thought.thought_picks.length.times do |p| %>
+                                        〇
+                                    <% end %>
+                                <% end %>
+                            </div>
                             <% if thought.user_id == session[:user_id] %>
-                            <div class="thought-handler"><button class="btn-danger thought-delete-button">-</button></div>
+                            <div class="thought-handler">
+                                <% if @meeting.status == 1 %>
+                                    <button class="btn-danger thought-delete-button">-</button>
+                                <% elsif @meeting.status == 5 %>
+                                    <button class="btn-success thought-pick-button">+</button>
+                                <% end %>
+                            </div>
                             <% end %>
                         </div>
                     <% end %>
@@ -77,8 +126,21 @@
                         <div class="thought-user-name"><%= thought.user.name %></div>
                         <div class="thought-content"><%= thought.content %></div>
                         <input type="hidden" value="<%= thought.id %>"/>
+                        <div class="thought-pick">
+                            <% if @meeting.status >= 5 %>
+                                <% thought.thought_picks.length.times do |p| %>
+                                    〇
+                                <% end %>
+                            <% end %>
+                        </div>
                         <% if thought.user_id == session[:user_id] %>
-                        <div class="thought-handler"><button class="btn-danger thought-delete-button">-</button></div>
+                            <div class="thought-handler">
+                                <% if @meeting.status == 1 %>
+                                    <button class="btn-danger thought-delete-button">-</button>
+                                <% elsif @meeting.status == 5 %>
+                                <button class="btn-success thought-pick-button">+</button>
+                            <% end %>
+                            </div>
                         <% end %>
                     </div>
                 <% end %>
@@ -143,10 +205,16 @@
                         timingStartResponse(data);
                         break;
                     case 'timeup':
-                        timeupResponse();
+                        timeupResponse(data);
                         break;
                     case 'delete':
                         deleteResponse(data);
+                        break;
+                    case 'pushTime':
+                        pushTimeResponse(data);
+                        break;
+                    case 'pick_up':
+                        pickUpResponse(data);
                         break;
                 }
             },
@@ -160,7 +228,10 @@
                 this.perform('delete_thought', {id: id});
             },
             pushTime: function(second) {
-                this.perform('pushTime', {second: second});
+                this.perform('push_time', {second: second});
+            },
+            pickThought: function (id) {
+                this.perform('pick_thought', {id: id});
             }
         })
         $("#meeting-info-name").on('dblclick', function(){
@@ -182,8 +253,17 @@
             App.meeting.timingStart(pushTime);
         })
 
-        $(".thought-delete-button").on('click', function(){
-            deleteThought($(this).parent().children("input[type='hidden']").val())
+        $(".thought-delete-button").each(function(){
+            $(this).on('click', function(){
+                deleteThought($(this).parent().parent().children("input[type='hidden']").val())
+            })
+        })
+
+        $(".thought-pick-button").each(function(){
+            $(this).on('click', function(){
+                App.meeting.pickThought($(this).parent().parent().children("input[type='hidden']").val())
+                $(this).remove();
+            })
         })
 
 
@@ -214,6 +294,8 @@
                 thoughtIdField = document.createElement('input');
                 thoughtIdField.type = 'hidden';
                 $(thoughtIdField).val(data.thought.id);
+                const thoughtPickDiv = document.createElement('div');
+                thoughtPickDiv.className = "thought-pick";
                 const thoughtHandlerDiv = document.createElement('div');
                 thoughtHandlerDiv.className = "thought-handler";
                 if (data.thought.user_id === <%= session[:user_id] %>) {
@@ -228,6 +310,7 @@
                 $(thoughtElement).append(userNameDiv);
                 $(thoughtElement).append(thoughtContentDiv);
                 $(thoughtElement).append(thoughtIdField);
+                $(thoughtElement).append(thoughtPickDiv);
                 $(thoughtElement).append(thoughtHandlerDiv);
                 $(targetElement).append(thoughtElement);
             }
@@ -247,7 +330,7 @@
             }
 
             <% if @meeting.users.first.id == session[:user_id] %>
-                if (data.id !== <%= session[:user_id] %>) {
+                if (data.id !== <%= session[:user_id] %> && !!$("#timer-timebox").val()) {
                     App.meeting.pushTime($("#timer-timebox").val());
                 }
             <% end %>
@@ -262,25 +345,7 @@
         function timingStartResponse (data) {
             time = parseInt(data.second);
             $("#timer-timebox").val(time);
-            let statusText = null;
-            switch(data.status) {
-                case 1:
-                    statusText = 'submiting';
-                    break;
-                case 2:
-                    statusText = 'talking';
-                    break;
-                case 3:
-                    statusText = 'selecting';
-                    break;
-                case 4:
-                    statusText = 'discussing';
-                    break;
-                case 5:
-                    statusText = 'ended';
-                    break;
-            }
-            $("#meeting-status").text(statusText);
+            setStatus(data.status, data.thought);
             clearTimeout(timer);
             timer = setTimeout(function() { countdown(); }, 1000)
         }
@@ -296,10 +361,75 @@
             }
         }
     
-        function timeupResponse () {
+        function timeupResponse (data) {
+            setStatus(data)
             $("#thought").attr('readonly', true);
+            $(".thought-handler").children().remove();
         }
     
+        function setStatus (data, thought=null) {
+            let statusText = null;
+            switch(parseInt(data)) {
+                case 1:
+                    statusText = 'submiting';
+                    break;
+                case 2:
+                    statusText = 'waiting talking';
+                    break;
+                case 3:
+                    statusText = 'talking';
+                    break;
+                case 4:
+                    statusText = 'waiting selecting';
+                    break;
+                case 5:
+                    statusText = 'selecting';
+                    addSelectButtons();
+                    break;
+                case 6:
+                    statusText = 'waiting discussing';
+                    break;
+                case 7:
+                    statusText = 'discussing';
+                    startDiscuss();
+                    break;
+                case 8:
+                    statusText = 'ended';
+                    $("#timer-block").remove();
+                    break;
+                default:
+                    statusText = 'discussing';
+                    startDiscuss(thought);
+            }
+            $("#meeting-status").text(statusText);
+        }
+
+        function addSelectButtons () {
+            $("#p-board .thought-handler").each(function(){
+                const id = $(this).parent().children("input[type='hidden']").val();
+                const pickButton = document.createElement('button');
+                pickButton.className = "btn-success thought-pick-button";
+                $(pickButton).click(function(){
+                    App.meeting.pickThought(id);
+                    $(this).remove();
+                })
+                $(pickButton).text('+');
+                $(this).append(pickButton);
+            })
+
+            $("#t-board .thought-handler").each(function(){
+                const id = $(this).parent().children("input[type='hidden']").val();
+                const pickButton = document.createElement('button');
+                pickButton.className = "btn-success thought-pick-button";
+                $(pickButton).click(function(){
+                    App.meeting.pickThought(id);
+                    $(this).remove();
+                })
+                $(pickButton).text('+');
+                $(this).append(pickButton);
+            })
+        }
+
         function deleteThought (id) {
             App.meeting.deleteThought(id);
         }
@@ -308,6 +438,23 @@
             if ($("#thought-" + id).length > 0) {
                 $("#thought-" + id).remove();
             }
+        }
+
+        function pushTimeResponse (data) {
+            if (!$("#timer-timebox").val()) {
+                time = parseInt(data);
+                $("#timer-timebox").val(data);
+                clearTimeout(timer);
+                timer = setTimeout(function() { countdown(); }, 1000)
+            }
+        }
+
+        function pickUpResponse(data) {
+            $("#thought-" + data + " .thought-pick").append("〇")
+        }
+
+        function startDiscuss () {
+            $("#discussing-board").show()
         }
     })
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2019_05_25_123133) do
+ActiveRecord::Schema.define(version: 2019_05_27_095447) do
 
   create_table "meetings", force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -20,6 +20,25 @@ ActiveRecord::Schema.define(version: 2019_05_25_123133) do
     t.integer "status", default: 0
   end
 
+  create_table "thought_opinions", force: :cascade do |t|
+    t.integer "user_id"
+    t.integer "thought_id"
+    t.boolean "opinion", default: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["thought_id"], name: "index_thought_opinions_on_thought_id"
+    t.index ["user_id"], name: "index_thought_opinions_on_user_id"
+  end
+
+  create_table "thought_picks", force: :cascade do |t|
+    t.integer "user_id"
+    t.integer "thought_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["thought_id"], name: "index_thought_picks_on_thought_id"
+    t.index ["user_id"], name: "index_thought_picks_on_user_id"
+  end
+
   create_table "thoughts", force: :cascade do |t|
     t.string "content"
     t.integer "ttype"
@@ -27,6 +46,7 @@ ActiveRecord::Schema.define(version: 2019_05_25_123133) do
     t.integer "meeting_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "discussing", default: 0
     t.index ["meeting_id"], name: "index_thoughts_on_meeting_id"
     t.index ["user_id"], name: "index_thoughts_on_user_id"
   end
