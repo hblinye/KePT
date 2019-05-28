@@ -1,29 +1,48 @@
 <div class="full-screen-height">
     <%= render 'layouts/logo' %>
-    <% if @meeting.status == 7 %>
+    <% if @meeting.status >= 7 %>
         <div id="discussing-board">
-        <% else %>
-        <div id="discussing-board" style="display:none">
-        <% discussing_thought = @meeting.thoughts.select{|x| x.discussing == 1 }.first %>
-        <div id="discussing-controller">
-            <% if @meeting.users.first.id == session[:user_id] %>
-                <button id="end-discuss-button">end</button>
-                <% if discussing_thought.ttype == 2 %>
-                    <button id="discuss-try-button">To Try</button>
-                <% end %>
-                <div class="input-group">
-                    <%=text_field_tag :discuss_time, '', class: "form-control", placeholder: "time for discussing..."%>
-                    <span class="input-group-btn">
-                        <%=submit_tag "Push", class: "btn btn-primary" %>
-                    </span>
-                </div>
-            <% end %>
-        </div>
-        <div id="discussing-thought-container">
-        </div>
-        <div id="discussing-operations">
-        </div>
+    <% else %>
+    <div id="discussing-board" style="display:none">
     <% end %>
+        <% discussing_thought = @meeting.thoughts.select{|x| x.discussing == 1 || x.discussing == 2 }.first %>
+        <div id="dicussing-card">
+            <div id="discussing-controller" class="content-center">
+                <% if @meeting.users.first.id == session[:user_id] %>
+                    <button id="end-discuss-button" class="btn btn-danger">end</button>
+                    <input type="text" class="form-control" id="discuss-time" />
+                    <button id="start-discuss" class="btn btn-primary">start</button>
+                    <button id="discuss-try-button" class="btn btn-success">Next</button>
+                <% else %>
+                    <input type="text" class="form-control" id="discuss-time" disabled/>
+                <% end %>
+            </div>
+            <div id="discussing-thought-container" class="content-center">
+                <div id="discussing-thought">
+                    <div id="discussing-thought-content">
+                        <%= discussing_thought && discussing_thought.content %>
+                    </div>
+                    <div id="discussing-thought-from">
+                        <%= discussing_thought && discussing_thought.user.name %>
+                    </div>
+                </div>
+            </div>
+            <div id="discussing-operations" class="content-center">
+                <% if discussing_thought && discussing_thought.discussing == 2 %>
+                    <button id="discuss-opinion-negative" class="btn btn-danger">-</button>
+                    <button id="discuss-opinion-no-sense" class="btn btn-primary">=</button>
+                    <button id="discuss-opinion-positive" class="btn btn-success">+</button>
+                <% end %>
+            </div>
+            <div id="discussing-team-opinion" class="content-center">
+                <% if discussing_thought && discussing_thought.discussing == 2 %>
+                    <% sum = 0 %>
+                    <%  discussing_thought.thought_opinions.each do |opinion| sum += opinion.opinion %>
+                    <% end %>
+                    <%= sum %>
+                <% end %>
+            </div>
+        </div>
     </div>
     <div id="board-block" class="row">
 
@@ -56,9 +75,9 @@
             <% if status < 99 %>
                 <div id="timer-block">
                     <% if @meeting.users.first.id != session[:user_id] %>
-                        <input type="text" id="timer-timebox" disabled />
+                        <input type="text" id="timer-timebox" disabled <% if status > 5 %> style="display: none" <% end %> />
                     <% else %>
-                        <input type="text" id="timer-timebox"/><button id="timer-starter" class="btn btn-primary">Start</button>
+                        <input type="text" id="timer-timebox" <% if status > 5 %> style="display: none" <% end %> /><button id="timer-starter" class="btn btn-primary">Start</button>
                     <% end %>
                 </div>
             <% end %>
@@ -216,6 +235,9 @@
                     case 'pick_up':
                         pickUpResponse(data);
                         break;
+                    case 'start_discuss':
+                        startDiscussResponse(data);
+                        break;
                 }
             },
             submit: function (thought, type) {
@@ -232,6 +254,9 @@
             },
             pickThought: function (id) {
                 this.perform('pick_thought', {id: id});
+            },
+            startDiscuss: function(second, id) {
+                this.perform('start_discuss', {second: second, id: id});
             }
         })
         $("#meeting-info-name").on('dblclick', function(){
@@ -266,6 +291,30 @@
             })
         })
 
+        <% if discussing_thought && (discussing_thought.discussing == 1 || discussing_thought.discussing == 2) %>
+            $("#start-discuss").click(function(){
+                App.meeting.startDiscuss($("#discuss-time").val(), <%= discussing_thought.id %>);
+            })
+        <% end %>
+
+        <% if discussing_thought && discussing_thought.discussing == 2 %>
+            $("#discuss-opinion-negative").click(function(){
+                sendOpinion(<%= discussing_thought.id %>, -1);
+            })
+            $("#discuss-opinion-no-sense").click(function(){
+                sendOpinion(<%= discussing_thought.id %>, 0);
+            })
+            $("#discuss-opinion-positive").click(function(){
+                sendOpinion(<%= discussing_thought.id %>, 1);
+            })
+        <% end %>
+
+        function sendOpinion (thoughtId, opinion) {
+            App.meeting.sendOpinion(thoughtId, opinion);
+            $("#discussing-operations").children().each(function(){
+                $(this).remove();
+            })
+        }
 
         function receivedSubmitRespose (data) {
             const type = data.thought.ttype;
@@ -343,19 +392,21 @@
         }
     
         function timingStartResponse (data) {
-            time = parseInt(data.second);
-            $("#timer-timebox").val(time);
-            setStatus(data.status, data.thought);
             clearTimeout(timer);
-            timer = setTimeout(function() { countdown(); }, 1000)
+            if (data.second) {
+                time = parseInt(data.second);
+                $("#timer-timebox").val(time);
+                timer = setTimeout(function() { countdown("timer-timebox"); }, 1000)
+            }
+            setStatus(data.status, data.thought);
         }
     
-        function countdown() {
+        function countdown(targetElement) {
             time -- ;
-            $("#timer-timebox").val(time);
+            $("#" + targetElement).val(time);
             clearTimeout(timer);
             if (time > 0) {
-                timer = setTimeout(function() { countdown(); }, 1000);
+                timer = setTimeout(function() { countdown(targetElement); }, 1000);
             } else {
                 $("#thought").attr('readonly', true);
             }
@@ -388,10 +439,11 @@
                     break;
                 case 6:
                     statusText = 'waiting discussing';
+                    $("#timer-timebox").hide();
                     break;
                 case 7:
                     statusText = 'discussing';
-                    startDiscuss();
+                    startDiscuss(thought);
                     break;
                 case 8:
                     statusText = 'ended';
@@ -453,8 +505,35 @@
             $("#thought-" + data + " .thought-pick").append("〇")
         }
 
-        function startDiscuss () {
-            $("#discussing-board").show()
+        function startDiscuss (thought) {
+            $("#discussing-board").show();
+            if (thought) {
+                $("#discussing-thought-content").text(thought.thought.content);
+                $("#discussing-thought-from").text(thought.user.name);
+                <% if @meeting.users.first.id == session[:user_id] %>
+                    $("#start-discuss").unbind("click");
+                    $("#start-discuss").click(function(){
+                        App.meeting.startDiscuss($("#discuss-time").val(), thought.id);
+                    })
+                <% end %>
+            }
+        }
+
+        function startDiscussResponse (data) {
+            clearTimeout(timer);
+            if (data) {
+                time = parseInt(data);
+                $("#discuss-time").val(time);
+                timer = setTimeout(function() { countdown("discuss-time"); }, 1000)
+            }
+            removeAllChildren("discussing-operations");
+            $("#discussing-team-opinion").text('');
+        }
+
+        function removeAllChildren(targetElement) {
+            $("#" + targetElement).children().each(function(){
+                $(this).remove();
+            })
         }
     })
 

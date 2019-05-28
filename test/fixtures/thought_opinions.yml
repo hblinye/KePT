@@ -3,9 +3,9 @@
 one:
   user: one
   thought: one
-  opinion: false
+  opinion: 1
 
 two:
   user: two
   thought: two
-  opinion: false
+  opinion: 1

@@ -3,5 +3,5 @@ class Thought < ApplicationRecord
   belongs_to :user
   belongs_to :meeting
   has_many :thought_picks
-  has_many :thought_opinion
+  has_many :thought_opinions
 end

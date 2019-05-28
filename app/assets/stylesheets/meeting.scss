@@ -277,9 +277,61 @@
     width: 100vw;
     height: 100vh;
     position: fixed;
-    background: #333;
+    background: rgba(66, 64, 64, 0.5);
     top: 0;
     left: 0;
     z-index: 9999;
-    opacity: 0.5;
+
+    #dicussing-card {
+        width: 80vw;
+        height: 80vh;
+        top: 10vh;
+        left: 10vw;
+        position: absolute;
+        background: white;
+        box-shadow: 0 0 25px black;
+        #discussing-controller {
+            margin-top: 8vh;
+            height: 8vh;
+            #discuss-time {
+                text-align: center;
+                width: 70px;
+            }
+        }
+
+        #discussing-thought-container {
+            height: 48vh;
+
+            #discussing-thought-content {
+                border-bottom: 1px solid;
+                font-size: 20px;
+                word-break: break-word;
+                padding: 5vh 10vw;
+                text-shadow: 0 0 2px black;
+            }
+            #discussing-thought-from {
+                text-align: center;
+            }
+
+            #discussing-thought-from::before {
+                content: 'From:';
+                float: left;
+            }
+        }
+
+        #discussing-operations {
+            height: 8vh;
+            margin-top: 5px;
+            button {
+                margin: 5vw;
+            }
+        }
+
+        #discussing-team-opinion {
+            font-size: 25px;
+            text-shadow: 0 0 5px #d9534f;
+            color: #d9534f;
+        }
+    }
+
 }
