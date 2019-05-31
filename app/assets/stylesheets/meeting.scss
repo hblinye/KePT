@@ -290,6 +290,24 @@
         position: absolute;
         background: white;
         box-shadow: 0 0 25px black;
+
+        #discussing-status {
+            position: absolute;
+            left: 20%;
+            top: 3%;
+
+            button {
+                width: 60px;
+                height: 60px;
+                border: 0;
+                color: white;
+                background: #888;
+                border-radius: 30px;
+                text-align: center;
+                font-size: 35px;
+            }
+        }
+
         #discussing-controller {
             margin-top: 8vh;
             height: 8vh;

@@ -37,7 +37,7 @@ class MeetingChannel < ApplicationCable::Channel
     response_data[:data] = Hash.new
     response_data[:data][:status] = meeting.status
     if meeting.status >= 7
-      thoughts_ids = Thought.where({meeting_id: meeting.id, discussing: 0}).ids
+      thoughts_ids = Thought.where({meeting_id: meeting.id, discussing: 0, ttype: 2}).ids
       most_picked_ids = ThoughtPick.where(thought_id: thoughts_ids).group('thought_id').order('count_user_id desc').count('user_id').first
       if most_picked_ids.length > 0
         response_data[:data][:thought] = Hash.new
@@ -80,7 +80,7 @@ class MeetingChannel < ApplicationCable::Channel
     if second = data['second'].to_i
       if thought = Thought.find_by({id: data['id'].to_i})
         thought.update!({discussing: 1})
-        thought.thought_opinions.destroy
+        thought.thought_opinions.each do |opinion| opinion.destroy end
         response_data = Hash.new
         response_data[:type] = 'start_discuss'
         response_data[:data] = second
@@ -88,5 +88,20 @@ class MeetingChannel < ApplicationCable::Channel
         ActionCable.server.broadcast "meeting_#{thought.meeting_id}", response_data
       end
     end
+  end
+
+  def send_opinion(data)
+    ThoughtOpinion.create!({thought_id: data['id'], user_id: current_user[:um].user_id, opinion: data['opinion'].to_i})
+  end
+
+  def end_discuss()
+    meeting = current_user[:um].meeting
+    meeting.update!({status: 8})
+    meeting.thoughts.each do |thought|
+      thought.update!({discussing: 3})
+    end
+    response_data = Hash.new
+    response_data[:type] = 'end'
+    ActionCable.server.broadcast "meeting_#{meeting.id}", response_data
   end
 end

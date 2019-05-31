@@ -5,7 +5,7 @@ class DiscussCountDownJob < ApplicationJob
         thought.update!({discussing: 2})
         response_data = Hash.new
         response_data[:type] = 'discuss_time_up'
-        response_data[:thought] = thought
+        response_data[:data] = thought
         ActionCable.server.broadcast "meeting_#{thought.meeting_id}", response_data
     end
 end
