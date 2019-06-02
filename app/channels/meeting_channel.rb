@@ -12,21 +12,14 @@ class MeetingChannel < ApplicationCable::Channel
   end
 
   def submit(data)
-    # if meeting = Meeting.find_by({id: current_user[:um].meeting_id, status: 1})
-    #   Thought.create!({
-    #     content: data['thought'],
-    #     ttype: data['type'].to_i,
-    #     user_id: current_user[:um].user_id,
-    #     meeting_id: meeting.id
-    #   })
-    # end
-    
-    Thought.create!({
-      content: data['thought'],
-      ttype: data['type'].to_i,
-      user_id: current_user[:um].user_id,
-      meeting_id: current_user[:um].meeting_id
-    })
+    if meeting = Meeting.find_by({id: current_user[:um].meeting_id, status: 1})
+      Thought.create!({
+        content: data['thought'],
+        ttype: data['type'].to_i,
+        user_id: current_user[:um].user_id,
+        meeting_id: meeting.id
+      })
+    end
   end
 
   def timing_start(data)
@@ -38,6 +31,9 @@ class MeetingChannel < ApplicationCable::Channel
     response_data[:data][:status] = meeting.status
     if meeting.status >= 7
       thoughts_ids = Thought.where({meeting_id: meeting.id, discussing: 0, ttype: 2}).ids
+      if thoughts_ids.length <= 0
+        thoughts_ids = Thought.where({meeting_id: meeting.id, discussing: 0, ttype: 3}).ids
+      end
       most_picked_ids = ThoughtPick.where(thought_id: thoughts_ids).group('thought_id').order('count_user_id desc').count('user_id').first
       if most_picked_ids.length > 0
         response_data[:data][:thought] = Hash.new
@@ -92,6 +88,29 @@ class MeetingChannel < ApplicationCable::Channel
 
   def send_opinion(data)
     ThoughtOpinion.create!({thought_id: data['id'], user_id: current_user[:um].user_id, opinion: data['opinion'].to_i})
+  end
+
+  def change_discuss_thought(data)
+    if thought_id = data['id'].to_i
+      if now_thought = Thought.find(thought_id)
+        now_thought.update!({discussing: 3})
+        if status = data['status'].to_i
+          thoughts_ids = Thought.where({meeting_id: current_user[:um].meeting_id, discussing: 0, ttype: status}).ids
+          most_picked_ids = ThoughtPick.where(thought_id: thoughts_ids).group('thought_id').order('count_user_id desc').count('user_id').first
+          if most_picked_ids && most_picked_ids.length > 0
+            response_data = Hash.new
+            response_data[:type] = 'change_discuss_thought'
+            response_data[:data] = Hash.new
+            response_data[:data][:thought] = Hash.new
+            d_thought = Thought.find(most_picked_ids[0])
+            d_thought.update!({discussing: 1})
+            response_data[:data][:thought][:thought] = d_thought
+            response_data[:data][:thought][:user] = d_thought.user
+            ActionCable.server.broadcast "meeting_#{d_thought.meeting_id}", response_data
+          end
+        end
+      end
+    end
   end
 
   def end_discuss()
