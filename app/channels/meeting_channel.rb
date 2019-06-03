@@ -91,8 +91,8 @@ class MeetingChannel < ApplicationCable::Channel
   end
 
   def change_discuss_thought(data)
-    if thought_id = data['id'].to_i
-      if now_thought = Thought.find(thought_id)
+    if t_id = data['id'].to_i
+      if now_thought = Thought.find(t_id)
         now_thought.update!({discussing: 3})
         if status = data['status'].to_i
           thoughts_ids = Thought.where({meeting_id: current_user[:um].meeting_id, discussing: 0, ttype: status}).ids

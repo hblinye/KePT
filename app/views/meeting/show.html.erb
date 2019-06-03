@@ -21,12 +21,6 @@
                             <% end %>
                         <% end %>
                     </button>
-                <% else %>
-                    <% if discussing_thought %>
-                        <% if discussing_thought == 2 %>P
-                        <% else %>T
-                        <% end %>
-                    <% end %>
                 <% end %>
             </div>
             <div id="discussing-controller" class="content-center">
@@ -136,7 +130,7 @@
                     <% end %>
                 </div>
                 <div id="p-board" class="kpt-board">
-                    <div id="p-title" class="board-title">PROBLEAM</div>
+                    <div id="p-title" class="board-title">PROBLEM</div>
                     <% @meeting.thoughts.select{|x| x.ttype == 2}.each do |thought| %>
                         <div id="thought-<%= thought.id %>" class="thought-tag">
                             <div class="thought-user-name"><%= thought.user.name %></div>
@@ -647,6 +641,10 @@
                 $("#d-thought-status").val(thought.thought.ttype);
                 $("#discussing-status-toggle").text(['P', 'T'][thought.thought.ttype - 2])
                 $("#d-thought-id").val(thought.thought.id);
+                $("#discussing-operations").children().each(function(){
+                    $(this).remove();
+                })
+                $("#discussing-team-opinion").text('');
             }
         }
 
