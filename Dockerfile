@@ -8,8 +8,8 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
     rm -rf /var/lib/apt/lists/* && \
     gem install bundler
 
-ADD Gemfile Gemfile
-ADD Gemfile.lock Gemfile.lock
+ADD ./KePT/Gemfile Gemfile
+ADD ./KePT/Gemfile.lock Gemfile.lock
 RUN bundle install
 
 RUN mkdir -p /usr/src/app 

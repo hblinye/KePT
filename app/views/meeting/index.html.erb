@@ -44,7 +44,7 @@
         <div class="col-md-1 content-center meeting-detail-column">
             <strong>No.</strong>
         </div>
-        <div class="col-md-3 content-center meeting-detail-column">
+        <div class="col-md-2 content-center meeting-detail-column">
             <strong>Meeting Name</strong>
         </div>
         <div class="col-md-4 content-center meeting-detail-column">
@@ -53,7 +53,7 @@
         <div class="col-md-3 content-center meeting-detail-column">
             <strong>Created Time</strong>
         </div>
-        <div class="col-md-1 content-center meeting-detail-column">
+        <div class="col-md-2 content-center meeting-detail-column">
             
         </div>
     </div>
@@ -62,7 +62,7 @@
             <div class="col-md-1 content-center meeting-detail-column">
                 <%= index + 1 %>
             </div>
-            <div class="col-md-3 content-center meeting-detail-column">
+            <div class="col-md-2 content-center meeting-detail-column">
                 <%= meeting.name %>
             </div>
             <div class="col-md-4 content-center meeting-detail-column">
@@ -75,8 +75,9 @@
             <div class="col-md-3 content-center meeting-detail-column">
                 <%= meeting.created_at %>
             </div>
-            <div class="col-md-1 content-center meeting-detail-column">
+            <div class="meeting-operations col-md-2 content-center meeting-detail-column">
                 <%= link_to "Enter", enter_meeting_path(meeting)%>
+                <a href="http://192.168.99.100:8081/api/<%= @user.skey %>/export/?meeting_key=<%= meeting.skey %>">Export</a>
             </div>
         </div>
     <% end %>

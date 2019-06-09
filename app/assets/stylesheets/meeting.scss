@@ -59,6 +59,17 @@
                 height: 50px;
                 border-left: 1px solid #ddd;
             }
+
+            .meeting-operations{
+                a {
+                    width: 50%;
+                    text-align: center;
+                }
+
+                a:not(:first-child) {
+                    border-left: 1px solid #ccc;
+                }
+            }
         }
         
         .meeting-detail:first-child {
